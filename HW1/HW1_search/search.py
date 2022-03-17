@@ -212,6 +212,53 @@ def nullHeuristic(state, problem=None):
 def aStarSearch(problem, heuristic=nullHeuristic):
     """Search the node that has the lowest combined cost and heuristic first."""
     "*** YOUR CODE HERE ***"
+    class AdjPriorityQueue(util.PriorityQueue):
+        def update(self, item, priority):
+            for index, (p, c, i) in enumerate(self.heap):
+                if i[0] == item[0]:
+                    if p <= priority:
+                        break
+                    del self.heap[index]
+                    self.heap.append((priority, c, item))
+                    heapq.heapify(self.heap)
+                    break
+            else:
+                self.push(item, priority)
+    curState=problem.getStartState()
+    explored = []
+    curRoute = None
+    curCost=None
+    _pqueue=AdjPriorityQueue()
+    finalRoute = None
+
+    _pqueue.update([curState, [], 0.0], 0.0)
+    explored.append(curState)
+
+    while not _pqueue.isEmpty(): 
+        # 1. change current state to the state at top of the stack
+        tmp = _pqueue.pop()
+        curRoute = tmp[1]
+        curState = tmp[0]
+        curCost=tmp[2]
+        explored.append(curState)
+        # 2. is current state the goal
+        if problem.isGoalState(curState): 
+            finalRoute = curRoute
+            break
+
+        # 3. get successors and put into queue, 
+        # if the successor is explored then skip it. 
+        _successors = problem.getSuccessors(curState)
+        for i in _successors: 
+            if i[0] in explored: 
+                continue
+            tmpRoute = curRoute + [i[1]]
+            tmpCost = curCost + i[2]
+            _pqueue.update(
+                [i[0], tmpRoute, tmpCost], tmpCost + heuristic(i[0], problem)
+            )
+            # explored.append(i[0])
+    return finalRoute
     util.raiseNotDefined()
 
 
