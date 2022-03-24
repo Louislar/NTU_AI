@@ -66,10 +66,12 @@ class ReflexAgent(Agent):
         Print out these variables to see what you're getting, then combine them
         to create a masterful evaluation function.
         """
+        score=0.0
         # Useful information you can extract from a GameState (pacman.py)
         successorGameState = currentGameState.generatePacmanSuccessor(action)
         newPos = successorGameState.getPacmanPosition()
         newFood = successorGameState.getFood()
+        oldFood = currentGameState.getFood()
         # 10 points for every food you eat 
         """
         Returns a Grid of boolean food indicator variables.
@@ -79,7 +81,7 @@ class ReflexAgent(Agent):
 
         currentFood = state.getFood()
         if currentFood[x][y] == True: ...
-        """
+        """        
         newCapsule = successorGameState.getCapsules()
         # 200 points for every ghost you eat
         # but no point for capsule
@@ -93,6 +95,43 @@ class ReflexAgent(Agent):
         # Count down from 40 moves
         ghostStartPos = [ghostState.start.getPosition() for ghostState in newGhostStates]
         "*** YOUR CODE HERE ***"
+        '''
+        Define a function that will eat all the food up in the end, 
+        add score if any food is closer. 
+        Should use current state's food position to count the score. 
+        '''
+        # print(currentGameState.getPacmanPosition())
+        # print(newPos)
+        foodScore = 0.0
+        newFoodList = newFood.asList()
+        oldFoodList = oldFood.asList()
+        numFood = len(oldFoodList)
+        for _foodPos in oldFoodList: 
+          _dis = util.manhattanDistance(newPos, _foodPos)
+          # print(_foodPos)
+          # print(_dis)
+          if _dis == 0: 
+            foodScore += 3.0
+          else: 
+            foodScore += 1.0/_dis
+        # print(action)
+        # print(foodScore)
+        # print(successorGameState.getScore())
+        '''
+        Define a function that will escape from the ghosts, 
+        decrease the score when ghost is getting closer. 
+        (May be more important than eating food)
+        '''
+        numGhost = len(ghostPositions)
+        ghostScore = 0.0
+        for _ghostPos in ghostPositions: 
+          _dis = util.manhattanDistance(newPos, _ghostPos)
+          if _dis == 0:
+            ghostScore += 3.5
+          else: 
+            ghostScore += 1.0/_dis
+        ratio = float(numFood)/float(numGhost) if numGhost!=0 else 0
+        return foodScore - ratio * ghostScore
         return successorGameState.getScore() #default scoure
         #please change the return score as the score you want
 
