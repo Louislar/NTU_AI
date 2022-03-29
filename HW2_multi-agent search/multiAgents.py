@@ -12,6 +12,7 @@
 # Pieter Abbeel (pabbeel@cs.berkeley.edu).
 
 
+from operator import truediv
 from util import manhattanDistance
 from game import Directions
 import random, util
@@ -188,6 +189,105 @@ class MinimaxAgent(MultiAgentSearchAgent):
             Returns the total number of agents in the game
         """
         "*** YOUR CODE HERE ***"
+        '''
+        Maybe i can try to implement minmax by a stack, 
+        also maybe a stack counting the depth is needed. 
+        Or just implement by a recursive version maybe easiler?
+        '''
+        numAgents = gameState.getNumAgents()
+        pacmanLegalMoves = gameState.getLegalActions(0)
+        def minmaxExpand(startGameState): 
+          '''
+          return a action after minmax expanding and computing
+          '''
+          return maxMove(startGameState, 1)
+        def maxMove(curGameState, curDepth): 
+          '''
+          Expand moves from the Pacman
+          return a action with maximum value
+          '''
+          # return the eval val when the game is either win or lose
+          if curGameState.isWin() or curGameState.isLose():
+            return [[], self.evaluationFunction(curGameState)]
+          # after max expand then do the min expand
+          expandMoveAndValues = []
+          legalMoves = curGameState.getLegalActions(0)
+          for _aMove in legalMoves: 
+            expandMoveAndValues.append(
+              [_aMove, minMove(
+                curGameState.generateSuccessor(0, _aMove), 
+                curDepth, 
+                1
+              )[1]]
+            )
+          # print('max')
+          # print(expandMoveAndValues)
+          return max(expandMoveAndValues, key=lambda x: [i[1] for i in expandMoveAndValues if i[0]==x[0]][0])
+        def minMove(curGameState, curDepth, ghostIdx): 
+          '''
+          Expand moves from all the ghosts
+          return a action with minimum value
+          '''
+          # return the eval val when the game is either win or lose
+          if curGameState.isWin() or curGameState.isLose():
+            return [[], self.evaluationFunction(curGameState)]
+          # 1. if ghost idx is not the last one, then expand to current ghost's moves, 
+          # then move to next ghost moves, which is also a min expand
+          if ghostIdx < (curGameState.getNumAgents()-1):
+            expandMoveAndValues = []
+            legalMoves = curGameState.getLegalActions(ghostIdx)
+            for _aMove in legalMoves: 
+              expandMoveAndValues.append(
+                [_aMove, minMove(
+                  curGameState.generateSuccessor(ghostIdx, _aMove), 
+                  curDepth, 
+                  ghostIdx+1
+                )[1]]
+              )
+            # print('Expand min')
+            # print(expandMoveAndValues)
+            return min(expandMoveAndValues, key=lambda x: [i[1] for i in expandMoveAndValues if i[0]==x[0]][0])
+
+          # 2. if ghost idx is the last one, 
+          # but the desire depth is greater than current depth, 
+          # then do another max expand
+          if ghostIdx == (curGameState.getNumAgents()-1):
+            if curDepth < self.depth: 
+              expandMoveAndValues = []
+              legalMoves = curGameState.getLegalActions(ghostIdx)
+              for _aMove in legalMoves: 
+                expandMoveAndValues.append(
+                  [_aMove, maxMove(
+                    curGameState.generateSuccessor(ghostIdx, _aMove), 
+                    curDepth+1
+                  )[1]]
+                )
+              # print('Expand max')
+              # print(expandMoveAndValues)
+              return min(expandMoveAndValues, key=lambda x: [i[1] for i in expandMoveAndValues if i[0]==x[0]][0])
+
+          # 3. if ghost idx is the last one
+          # and current depth is the desire depth, then return the min expand value
+          if ghostIdx == (curGameState.getNumAgents()-1):
+            if curDepth == self.depth: 
+              expandMoveAndValues = []
+              legalMoves = curGameState.getLegalActions(ghostIdx)
+              for _aMove in legalMoves: 
+                expandMoveAndValues.append(
+                  [_aMove, self.evaluationFunction(curGameState.generateSuccessor(ghostIdx, _aMove))]
+                )
+              # print(curDepth)
+              # print(curGameState.getPacmanPosition())
+              # print(curGameState.getGhostStates()[ghostIdx-1].getPosition())
+              # print(curGameState.getGhostStates()[ghostIdx-2].getPosition())
+              # print(curGameState.getGhostStates()[ghostIdx-3].getPosition())
+              # print(curGameState)
+              # print(ghostIdx)
+              # print(legalMoves)
+              # print(expandMoveAndValues)
+              return min(expandMoveAndValues, key=lambda x: [i[1] for i in expandMoveAndValues if i[0]==x[0]][0])
+        max_move=minmaxExpand(gameState)
+        return max_move[0]
         util.raiseNotDefined()
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
