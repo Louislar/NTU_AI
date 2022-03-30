@@ -12,9 +12,7 @@
 # Pieter Abbeel (pabbeel@cs.berkeley.edu).
 
 
-from operator import truediv
 from util import manhattanDistance
-from game import Directions
 import random, util
 
 from game import Agent
@@ -432,6 +430,74 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
           legal moves.
         """
         "*** YOUR CODE HERE ***"
+        '''
+        The score of ghosts moves is the expected value of expanded nodes, 
+        which is the mean when it is uniform distribution
+        '''
+        def expectimaxExpand(curGameState): 
+          return maxExpand(curGameState, 1)
+        def maxExpand(curGameState, curDepth): 
+          # return the eval val when the game is either win or lose
+          if curGameState.isWin() or curGameState.isLose():
+            return [[], self.evaluationFunction(curGameState)]
+          # after max expand then do the min expand
+          curMaxSuccessor=None
+          legalMoves = curGameState.getLegalActions(0)
+          for _aMove in legalMoves: 
+            tmpSuccessorPair = [_aMove, ghostExpand(
+                curGameState.generateSuccessor(0, _aMove), 
+                curDepth, 1
+              )[1]]
+            if curMaxSuccessor is None: 
+              curMaxSuccessor = tmpSuccessorPair
+            else: 
+              curMaxSuccessor = max([curMaxSuccessor, tmpSuccessorPair], key=lambda x: x[1])
+          return curMaxSuccessor
+          
+        def ghostExpand(curGameState, curDepth, ghostIdx):
+          '''
+          ghost will expand randomly(Uniformly), score is the mean of expanded nodes
+          '''
+          # return the eval val when the game is either win or lose
+          if curGameState.isWin() or curGameState.isLose():
+            return [[], self.evaluationFunction(curGameState)]
+          # 1. if ghost idx is not the last one, then expand to current ghost's moves, 
+          # then move to next ghost moves, which is also a uniform expand
+          if ghostIdx < (curGameState.getNumAgents()-1): 
+            expandMoveAndValues = []
+            sumOfValues = 0.0
+            legalMoves = curGameState.getLegalActions(ghostIdx)
+            for _aMove in legalMoves: 
+              sumOfValues += ghostExpand(
+                  curGameState.generateSuccessor(ghostIdx, _aMove), 
+                  curDepth, 
+                  ghostIdx+1
+                )[1]
+            return [[], sumOfValues/float(len(legalMoves))]
+          # 2. if ghost idx is the last one, 
+          # but the desire depth is greater than current depth, 
+          # then do another max expand
+          if ghostIdx == (curGameState.getNumAgents()-1):
+            if curDepth < self.depth: 
+              sumOfValues = 0.0
+              legalMoves = curGameState.getLegalActions(ghostIdx)
+              for _aMove in legalMoves: 
+                sumOfValues += maxExpand(
+                    curGameState.generateSuccessor(ghostIdx, _aMove), 
+                    curDepth+1
+                  )[1]
+              return [[], sumOfValues/float(len(legalMoves))]
+          # 3. if ghost idx is the last one
+          # and current depth is the desire depth, then return the uniform expand value
+          if ghostIdx == (curGameState.getNumAgents()-1):
+            if curDepth == self.depth: 
+              sumOfValues = 0.0
+              legalMoves = curGameState.getLegalActions(ghostIdx)
+              for _aMove in legalMoves: 
+                sumOfValues += self.evaluationFunction(curGameState.generateSuccessor(ghostIdx, _aMove))
+              return [[], sumOfValues/float(len(legalMoves))]
+        optimalMove=expectimaxExpand(gameState)
+        return optimalMove[0]
         util.raiseNotDefined()
 
 
