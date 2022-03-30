@@ -194,8 +194,6 @@ class MinimaxAgent(MultiAgentSearchAgent):
         also maybe a stack counting the depth is needed. 
         Or just implement by a recursive version maybe easiler?
         '''
-        numAgents = gameState.getNumAgents()
-        pacmanLegalMoves = gameState.getLegalActions(0)
         def minmaxExpand(startGameState): 
           '''
           return a action after minmax expanding and computing
@@ -300,6 +298,125 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
           Returns the minimax action using self.depth and self.evaluationFunction
         """
         "*** YOUR CODE HERE ***"
+        def minmaxExpand(startGameState): 
+          '''
+          return a action after minmax expanding and computing
+          '''
+          alpha=-1e6
+          beta=1e6
+          return maxMove(startGameState, 1, alpha, beta)
+        def maxMove(curGameState, curDepth, alpha, beta): 
+          '''
+          Expand moves from the Pacman
+          return a action with maximum value
+          '''
+          # return the eval val when the game is either win or lose
+          if curGameState.isWin() or curGameState.isLose():
+            return [[], self.evaluationFunction(curGameState)]
+          # after max expand then do the min expand
+          curMaxSuccessor=None
+          legalMoves = curGameState.getLegalActions(0)
+          for _aMove in legalMoves: 
+            if curMaxSuccessor is None: 
+              curMaxSuccessor = [_aMove, minMove(
+                curGameState.generateSuccessor(0, _aMove), 
+                curDepth, 1, alpha, beta
+              )[1]]
+            else: 
+              curMaxSuccessor = max([curMaxSuccessor, [_aMove, minMove(
+                curGameState.generateSuccessor(0, _aMove), 
+                curDepth, 1, alpha, beta
+              )[1]]], key=lambda x: x[1])
+            if curMaxSuccessor[1] > beta: 
+              return curMaxSuccessor
+            alpha = max(alpha, curMaxSuccessor[1])
+          return curMaxSuccessor
+        def minMove(curGameState, curDepth, ghostIdx, alpha, beta): 
+          '''
+          Expand moves from all the ghosts
+          return a action with minimum value
+          '''
+          # return the eval val when the game is either win or lose
+          if curGameState.isWin() or curGameState.isLose():
+            return [[], self.evaluationFunction(curGameState)]
+          # 1. if ghost idx is not the last one, then expand to current ghost's moves, 
+          # then move to next ghost moves, which is also a min expand
+          if ghostIdx < (curGameState.getNumAgents()-1):
+            curMinSuccessor=None
+            legalMoves = curGameState.getLegalActions(ghostIdx)
+            for _aMove in legalMoves: 
+              if curMinSuccessor is None: 
+                curMinSuccessor = [_aMove, minMove(
+                  curGameState.generateSuccessor(ghostIdx, _aMove), 
+                  curDepth, 
+                  ghostIdx+1, 
+                  alpha, 
+                  beta
+                )[1]]
+              else: 
+                curMinSuccessor = min([curMinSuccessor, [_aMove, minMove(
+                  curGameState.generateSuccessor(ghostIdx, _aMove), 
+                  curDepth, 
+                  ghostIdx+1, 
+                  alpha, 
+                  beta
+                )[1]]], key=lambda x: x[1])
+              if curMinSuccessor[1] < alpha: 
+                return curMinSuccessor
+              beta = min(beta, curMinSuccessor[1])
+            return curMinSuccessor
+
+          # 2. if ghost idx is the last one, 
+          # but the desire depth is greater than current depth, 
+          # then do another max expand
+          if ghostIdx == (curGameState.getNumAgents()-1):
+            if curDepth < self.depth: 
+              curMinSuccessor=None
+              expandMoveAndValues = []
+              legalMoves = curGameState.getLegalActions(ghostIdx)
+              for _aMove in legalMoves: 
+                if curMinSuccessor is None: 
+                  curMinSuccessor = [_aMove, maxMove(
+                    curGameState.generateSuccessor(ghostIdx, _aMove), 
+                    curDepth+1, 
+                    alpha, 
+                    beta
+                  )[1]]
+                else: 
+                  curMinSuccessor = min([curMinSuccessor, [_aMove, maxMove(
+                    curGameState.generateSuccessor(ghostIdx, _aMove), 
+                    curDepth+1, 
+                    alpha, 
+                    beta
+                  )[1]]], key=lambda x: x[1])
+                if curMinSuccessor[1] < alpha: 
+                  return curMinSuccessor
+                beta = min(beta, curMinSuccessor[1])
+              return curMinSuccessor
+
+          # 3. if ghost idx is the last one
+          # and current depth is the desire depth, then return the min expand value
+          if ghostIdx == (curGameState.getNumAgents()-1):
+            if curDepth == self.depth: 
+              curMinSuccessor=None
+              legalMoves = curGameState.getLegalActions(ghostIdx)
+              for _aMove in legalMoves: 
+                if curMinSuccessor is None: 
+                  curMinSuccessor = [_aMove, self.evaluationFunction(curGameState.generateSuccessor(ghostIdx, _aMove))]
+                else: 
+                  curMinSuccessor = min(
+                    [
+                      curMinSuccessor, 
+                      [_aMove, self.evaluationFunction(curGameState.generateSuccessor(ghostIdx, _aMove))]
+                    ], 
+                    key = lambda x: x[1]
+                  )
+                if curMinSuccessor[1] < alpha: 
+                  return curMinSuccessor
+                beta = min(beta, curMinSuccessor[1])
+              return curMinSuccessor
+        optimalMove=minmaxExpand(gameState)
+        return optimalMove[0]
         util.raiseNotDefined()
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
